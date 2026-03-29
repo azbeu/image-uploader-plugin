@@ -1,0 +1,1393 @@
+<!doctype html>
+<html lang="uz">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Category Image Uploader</title>
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            :root {
+                --bg: #0f0f13;
+                --surface: #1a1a22;
+                --surface2: #22222e;
+                --border: #2e2e3e;
+                --accent: #6c63ff;
+                --accent-hover: #8a83ff;
+                --accent-dim: rgba(108, 99, 255, 0.15);
+                --success: #22c55e;
+                --error: #ef4444;
+                --warning: #f59e0b;
+                --text: #e8e8f0;
+                --text-muted: #7a7a9a;
+                --text-dim: #4a4a6a;
+                --radius: 10px;
+                --radius-sm: 6px;
+            }
+
+            body {
+                font-family:
+                    "SF Pro Display",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                font-size: 13px;
+                line-height: 1.5;
+                min-height: 100vh;
+                padding: 16px;
+            }
+
+            .header {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 18px;
+                padding-bottom: 14px;
+                border-bottom: 1px solid var(--border);
+            }
+            .header-icon {
+                width: 32px;
+                height: 32px;
+                background: var(--accent-dim);
+                border: 1px solid var(--accent);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+            }
+            .header-title {
+                font-size: 15px;
+                font-weight: 600;
+                color: var(--text);
+            }
+            .header-sub {
+                font-size: 11px;
+                color: var(--text-muted);
+            }
+
+            .section {
+                margin-bottom: 14px;
+            }
+            .label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                letter-spacing: 0.6px;
+                margin-bottom: 6px;
+            }
+            .label .dot {
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: var(--accent);
+            }
+
+            .input {
+                width: 100%;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                padding: 9px 12px;
+                color: var(--text);
+                font-size: 13px;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+            .input:focus {
+                border-color: var(--accent);
+            }
+            .input::placeholder {
+                color: var(--text-dim);
+            }
+            .input-token {
+                padding-right: 70px;
+            }
+
+            .input-wrap {
+                position: relative;
+            }
+            .input-action {
+                position: absolute;
+                right: 8px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: var(--accent-dim);
+                border: none;
+                border-radius: 4px;
+                color: var(--accent);
+                font-size: 11px;
+                padding: 3px 8px;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .input-action:hover {
+                background: var(--accent);
+                color: #fff;
+            }
+
+            .preview-card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 12px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                min-height: 64px;
+                transition: border-color 0.2s;
+            }
+            .preview-card.has-image {
+                border-color: var(--accent);
+            }
+            .preview-card.no-selection {
+                border-style: dashed;
+            }
+            .preview-img-box {
+                width: 48px;
+                height: 48px;
+                border-radius: 8px;
+                background: var(--surface2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                flex-shrink: 0;
+                font-size: 22px;
+            }
+            .preview-img-box img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .preview-info {
+                flex: 1;
+                min-width: 0;
+            }
+            .preview-name {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--text);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .preview-meta {
+                font-size: 11px;
+                color: var(--text-muted);
+                margin-top: 2px;
+            }
+            .preview-badge {
+                font-size: 10px;
+                font-weight: 600;
+                padding: 3px 8px;
+                border-radius: 20px;
+                background: var(--accent-dim);
+                color: var(--accent);
+                border: 1px solid rgba(108, 99, 255, 0.3);
+                white-space: nowrap;
+            }
+            .preview-badge.ready {
+                background: rgba(34, 197, 94, 0.12);
+                color: var(--success);
+                border-color: rgba(34, 197, 94, 0.3);
+            }
+            .preview-badge.empty {
+                background: var(--surface2);
+                color: var(--text-dim);
+                border-color: var(--border);
+            }
+
+            .autocomplete-wrap {
+                position: relative;
+            }
+            .autocomplete-list {
+                position: absolute;
+                top: calc(100% + 4px);
+                left: 0;
+                right: 0;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                max-height: 180px;
+                overflow-y: auto;
+                z-index: 999;
+                display: none;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            }
+            .autocomplete-list.open {
+                display: block;
+            }
+            .autocomplete-item {
+                padding: 9px 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: background 0.15s;
+                border-bottom: 1px solid var(--border);
+            }
+            .autocomplete-item:last-child {
+                border-bottom: none;
+            }
+            .autocomplete-item:hover,
+            .autocomplete-item.active {
+                background: var(--accent-dim);
+            }
+            .autocomplete-item-icon {
+                font-size: 14px;
+            }
+            .autocomplete-item-name {
+                font-size: 13px;
+                color: var(--text);
+                flex: 1;
+            }
+            .autocomplete-item-type {
+                font-size: 10px;
+                color: var(--text-muted);
+            }
+
+            .autocomplete-selected {
+                background: var(--surface);
+                border: 1px solid var(--accent);
+                border-radius: var(--radius-sm);
+                padding: 8px 12px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+            }
+            .selected-info {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex: 1;
+                min-width: 0;
+            }
+            .selected-name {
+                font-size: 13px;
+                color: var(--text);
+                font-weight: 500;
+            }
+            .selected-meta {
+                font-size: 11px;
+                color: var(--text-muted);
+            }
+            .clear-btn {
+                background: none;
+                border: none;
+                color: var(--text-dim);
+                cursor: pointer;
+                font-size: 16px;
+                line-height: 1;
+                padding: 2px 4px;
+                border-radius: 4px;
+                transition:
+                    color 0.2s,
+                    background 0.2s;
+                flex-shrink: 0;
+            }
+            .clear-btn:hover {
+                color: var(--error);
+                background: rgba(239, 68, 68, 0.1);
+            }
+
+            .breadcrumb {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 12px;
+                background: var(--surface2);
+                border-radius: var(--radius-sm);
+                font-size: 12px;
+                color: var(--text-muted);
+                margin-bottom: 8px;
+                flex-wrap: wrap;
+            }
+            .breadcrumb-item {
+                color: var(--text);
+                font-weight: 500;
+            }
+            .breadcrumb-sep {
+                color: var(--text-dim);
+            }
+
+            .divider {
+                border: none;
+                border-top: 1px solid var(--border);
+                margin: 16px 0;
+            }
+
+            .btn-submit {
+                width: 100%;
+                background: var(--accent);
+                color: #fff;
+                border: none;
+                border-radius: var(--radius-sm);
+                padding: 12px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                letter-spacing: 0.2px;
+            }
+            .btn-submit:hover:not(:disabled) {
+                background: var(--accent-hover);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 16px rgba(108, 99, 255, 0.4);
+            }
+            .btn-submit:active:not(:disabled) {
+                transform: translateY(0);
+            }
+            .btn-submit:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+
+            .toast {
+                position: fixed;
+                bottom: 16px;
+                left: 16px;
+                right: 16px;
+                padding: 12px 16px;
+                border-radius: var(--radius-sm);
+                font-size: 13px;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transform: translateY(80px);
+                opacity: 0;
+                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                z-index: 9999;
+            }
+            .toast.show {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            .toast.success {
+                background: rgba(34, 197, 94, 0.15);
+                border: 1px solid rgba(34, 197, 94, 0.4);
+                color: var(--success);
+            }
+            .toast.error {
+                background: rgba(239, 68, 68, 0.15);
+                border: 1px solid rgba(239, 68, 68, 0.4);
+                color: var(--error);
+            }
+            .toast.info {
+                background: var(--accent-dim);
+                border: 1px solid rgba(108, 99, 255, 0.4);
+                color: var(--accent);
+            }
+
+            .progress-bar-wrap {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 20px;
+                height: 6px;
+                overflow: hidden;
+                margin-top: 10px;
+                display: none;
+            }
+            .progress-bar-wrap.show {
+                display: block;
+            }
+            .progress-bar {
+                height: 100%;
+                background: linear-gradient(90deg, var(--accent), #a78bfa);
+                border-radius: 20px;
+                width: 0%;
+                transition: width 0.3s;
+            }
+
+            .status-text {
+                font-size: 11px;
+                color: var(--text-muted);
+                margin-top: 6px;
+                text-align: center;
+                min-height: 16px;
+            }
+
+            ::-webkit-scrollbar {
+                width: 4px;
+            }
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            ::-webkit-scrollbar-thumb {
+                background: var(--border);
+                border-radius: 4px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--text-dim);
+            }
+
+            .hidden {
+                display: none !important;
+            }
+
+            .cat-thumb-wrap {
+                position: relative;
+                width: 70px;
+                height: 70px;
+                flex-shrink: 0;
+                border-radius: var(--radius-sm);
+                overflow: hidden;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .cat-thumb {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: none;
+            }
+            .cat-thumb.loaded {
+                display: block;
+            }
+            .cat-thumb-fallback {
+                font-size: 28px;
+            }
+            .cat-thumb.loaded + .cat-thumb-fallback {
+                display: none;
+            }
+
+            /* ── Error Log Panel ── */
+            .error-log-panel {
+                margin-top: 14px;
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                overflow: hidden;
+            }
+            .error-log-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 8px 12px;
+                background: var(--surface);
+                cursor: pointer;
+                user-select: none;
+                gap: 8px;
+            }
+            .error-log-header:hover {
+                background: var(--surface2);
+            }
+            .error-log-title {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                letter-spacing: 0.6px;
+            }
+            .error-log-count {
+                background: var(--error);
+                color: #fff;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 1px 6px;
+                border-radius: 10px;
+                min-width: 18px;
+                text-align: center;
+            }
+            .error-log-count.zero {
+                background: var(--surface2);
+                color: var(--text-dim);
+            }
+            .error-log-toggle {
+                font-size: 10px;
+                color: var(--text-dim);
+                transition: transform 0.2s;
+            }
+            .error-log-toggle.open {
+                transform: rotate(180deg);
+            }
+            .error-log-body {
+                display: none;
+                max-height: 220px;
+                overflow-y: auto;
+                background: #0a0a0e;
+            }
+            .error-log-body.open {
+                display: block;
+            }
+            .error-log-empty {
+                padding: 16px 12px;
+                text-align: center;
+                font-size: 11px;
+                color: var(--text-dim);
+            }
+            .error-log-item {
+                padding: 10px 12px;
+                border-bottom: 1px solid var(--border);
+                font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+                font-size: 11px;
+            }
+            .error-log-item:last-child {
+                border-bottom: none;
+            }
+            .error-log-item-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 4px;
+                flex-wrap: wrap;
+            }
+            .error-log-time {
+                color: var(--text-dim);
+                font-size: 10px;
+            }
+            .error-log-status {
+                padding: 1px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 700;
+            }
+            .error-log-status.s4xx {
+                background: rgba(239, 68, 68, 0.15);
+                color: var(--error);
+                border: 1px solid rgba(239, 68, 68, 0.3);
+            }
+            .error-log-status.s5xx {
+                background: rgba(245, 158, 11, 0.15);
+                color: var(--warning);
+                border: 1px solid rgba(245, 158, 11, 0.3);
+            }
+            .error-log-status.s0 {
+                background: rgba(108, 99, 255, 0.15);
+                color: var(--accent);
+                border: 1px solid rgba(108, 99, 255, 0.3);
+            }
+            .error-log-url {
+                color: var(--text-muted);
+                font-size: 10px;
+                word-break: break-all;
+            }
+            .error-log-msg {
+                color: var(--error);
+                margin-top: 3px;
+                word-break: break-all;
+                line-height: 1.4;
+            }
+            .error-log-body-text {
+                margin-top: 4px;
+                padding: 6px 8px;
+                background: var(--surface);
+                border-radius: 4px;
+                color: var(--text-muted);
+                font-size: 10px;
+                word-break: break-all;
+                line-height: 1.4;
+                max-height: 80px;
+                overflow-y: auto;
+            }
+            .error-log-actions {
+                display: flex;
+                gap: 6px;
+                padding: 8px 12px;
+                border-top: 1px solid var(--border);
+                background: var(--surface);
+            }
+            .error-log-clear-btn {
+                background: none;
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                color: var(--text-muted);
+                font-size: 11px;
+                padding: 3px 10px;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .error-log-clear-btn:hover {
+                border-color: var(--error);
+                color: var(--error);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="header-icon">🗂️</div>
+            <div>
+                <div class="header-title">Category Uploader</div>
+                <div class="header-sub">uzxarid.felixits.uz</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="label">
+                <span class="dot"></span>Authorization Token
+            </div>
+            <div class="input-wrap">
+                <input
+                    class="input"
+                    id="tokenInput"
+                    type="text"
+                    placeholder="Bearer eyJ..."
+                    spellcheck="false"
+                    autocomplete="off"
+                />
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="label">
+                <span class="dot"></span>Tanlangan Rasm (Figma)
+            </div>
+            <div class="preview-card no-selection" id="previewCard">
+                <div class="preview-img-box" id="previewImgBox">🖼️</div>
+                <div class="preview-info">
+                    <div class="preview-name" id="previewName">
+                        Hech narsa tanlanmagan
+                    </div>
+                    <div class="preview-meta" id="previewMeta">
+                        Figmada frame yoki component tanlang
+                    </div>
+                </div>
+                <div class="preview-badge empty" id="previewBadge">—</div>
+            </div>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="section">
+            <div class="label"><span class="dot"></span>Kategoriya Turi</div>
+            <select class="input" id="categoryTypeSelect">
+                <option value="">Barchasi</option>
+                <option value="Product">Product</option>
+                <option value="Service">Service</option>
+                <option value="Auto">Auto</option>
+                <option value="Home">Home</option>
+            </select>
+        </div>
+
+        <div class="section">
+            <div class="label"><span class="dot"></span>Kategoriya</div>
+            <div id="parentSelectedView" class="hidden">
+                <div class="autocomplete-selected">
+                    <div class="selected-info">
+                        <div class="cat-thumb-wrap">
+                            <img class="cat-thumb" id="parentSelectedImg" src="" alt="" />
+                            <span class="cat-thumb-fallback" id="parentSelectedFallback">📁</span>
+                        </div>
+                        <div>
+                            <div
+                                class="selected-name"
+                                id="parentSelectedName"
+                            ></div>
+                            <div
+                                class="selected-meta"
+                                id="parentSelectedMeta"
+                            ></div>
+                        </div>
+                    </div>
+                    <button class="clear-btn" id="clearParentBtn">✕</button>
+                </div>
+            </div>
+            <div id="parentSearchView">
+                <div class="autocomplete-wrap">
+                    <input
+                        class="input"
+                        id="parentSearchInput"
+                        placeholder="Kategoriya qidiring..."
+                        autocomplete="off"
+                    />
+                    <div class="autocomplete-list" id="parentDropdown"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section hidden" id="childSection">
+            <div class="label">
+                <span class="dot"></span>Ichki Kategoriya (Child)
+            </div>
+            <div id="childSelectedView" class="hidden">
+                <div class="autocomplete-selected">
+                    <div class="selected-info">
+                        <div class="cat-thumb-wrap">
+                            <img class="cat-thumb" id="childSelectedImg" src="" alt="" />
+                            <span class="cat-thumb-fallback" id="childSelectedFallback">📂</span>
+                        </div>
+                        <div>
+                            <div
+                                class="selected-name"
+                                id="childSelectedName"
+                            ></div>
+                            <div
+                                class="selected-meta"
+                                id="childSelectedMeta"
+                            ></div>
+                        </div>
+                    </div>
+                    <button class="clear-btn" id="clearChildBtn">✕</button>
+                </div>
+            </div>
+            <div id="childSearchView">
+                <div class="autocomplete-wrap">
+                    <input
+                        class="input"
+                        id="childSearchInput"
+                        placeholder="Child kategoriya qidiring..."
+                        autocomplete="off"
+                    />
+                    <div class="autocomplete-list" id="childDropdown"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="breadcrumb hidden" id="breadcrumb">
+            <span>📍</span>
+            <span class="breadcrumb-item" id="bcParent"></span>
+            <span class="breadcrumb-sep" id="bcSep" style="display: none"
+                >›</span
+            >
+            <span class="breadcrumb-item" id="bcChild"></span>
+        </div>
+
+        <hr class="divider" />
+
+        <button class="btn-submit" id="submitBtn" disabled>
+            <span id="submitIcon">⬆️</span>
+            <span id="submitText">Yuborish</span>
+        </button>
+        <div class="progress-bar-wrap" id="progressWrap">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="status-text" id="statusText"></div>
+
+        <!-- Error Log Panel -->
+        <div class="error-log-panel" id="errorLogPanel">
+            <div class="error-log-header" id="errorLogHeader">
+                <div class="error-log-title">
+                    <span>🐛</span> Error Log
+                    <span class="error-log-count zero" id="errorLogCount">0</span>
+                </div>
+                <span class="error-log-toggle" id="errorLogToggle">▼</span>
+            </div>
+            <div class="error-log-body" id="errorLogBody">
+                <div class="error-log-empty" id="errorLogEmpty">Hozircha xatolik yo'q</div>
+                <div class="error-log-actions hidden" id="errorLogActions">
+                    <button class="error-log-clear-btn" id="errorLogClearBtn">🗑 Tozalash</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+
+        <script>
+            const BASE_URL = "https://uzxarid.felixits.uz";
+
+            let state = {
+                token: "",
+                selectedNode: null,
+                imageBytes: null,
+                imageDataUrl: null,
+                allCategories: [],
+                parentSelected: null,
+                childSelected: null,
+                loading: false,
+            };
+
+            const tokenInput = document.getElementById("tokenInput");
+            const previewCard = document.getElementById("previewCard");
+            const previewImgBox = document.getElementById("previewImgBox");
+            const previewName = document.getElementById("previewName");
+            const previewMeta = document.getElementById("previewMeta");
+            const previewBadge = document.getElementById("previewBadge");
+            const categoryTypeSelect =
+                document.getElementById("categoryTypeSelect");
+            const parentSearchInput =
+                document.getElementById("parentSearchInput");
+            const parentDropdown = document.getElementById("parentDropdown");
+            const parentSelectedView =
+                document.getElementById("parentSelectedView");
+            const parentSelectedName =
+                document.getElementById("parentSelectedName");
+            const parentSelectedMeta =
+                document.getElementById("parentSelectedMeta");
+            const parentSearchView =
+                document.getElementById("parentSearchView");
+            const clearParentBtn = document.getElementById("clearParentBtn");
+            const childSection = document.getElementById("childSection");
+            const childSearchInput =
+                document.getElementById("childSearchInput");
+            const childDropdown = document.getElementById("childDropdown");
+            const childSelectedView =
+                document.getElementById("childSelectedView");
+            const childSelectedName =
+                document.getElementById("childSelectedName");
+            const childSelectedMeta =
+                document.getElementById("childSelectedMeta");
+            const childSearchView = document.getElementById("childSearchView");
+            const clearChildBtn = document.getElementById("clearChildBtn");
+            const breadcrumb = document.getElementById("breadcrumb");
+            const bcParent = document.getElementById("bcParent");
+            const bcChild = document.getElementById("bcChild");
+            const bcSep = document.getElementById("bcSep");
+            const submitBtn = document.getElementById("submitBtn");
+            const submitText = document.getElementById("submitText");
+            const submitIcon = document.getElementById("submitIcon");
+            const progressWrap = document.getElementById("progressWrap");
+            const progressBar = document.getElementById("progressBar");
+            const statusText = document.getElementById("statusText");
+            const toast = document.getElementById("toast");
+
+            // Plugin ochilishi bilan kategoriyalarni yuklash
+            fetchCategories();
+
+            // Token o'zgarganda avtomatik kategoriyalarni yuklash
+            let tokenDebounce;
+            tokenInput.addEventListener("input", () => {
+                const val = tokenInput.value.trim();
+                state.token = val;
+                clearTimeout(tokenDebounce);
+                tokenDebounce = setTimeout(() => {
+                    if (val.startsWith("Bearer ")) {
+                        fetchCategories();
+                    }
+                }, 600);
+            });
+
+            async function fetchCategories() {
+                const type = categoryTypeSelect.value;
+                const params = new URLSearchParams({ page_size: 200 });
+                if (type) params.set("category_type", type);
+                const reqUrl = `${BASE_URL}/api/v1/category/?${params}`;
+                try {
+                    setStatus("Kategoriyalar yuklanmoqda...");
+                    console.log("[fetchCategories] GET", reqUrl);
+
+                    const res = await fetch(reqUrl);
+
+                    const rawText = await res.text();
+                    console.log("[fetchCategories] status:", res.status, "body:", rawText.slice(0, 300));
+
+                    if (!res.ok) {
+                        addErrorLog({ method: "GET", url: reqUrl, status: res.status, message: `Kategoriyalar yuklanmadi`, responseBody: rawText });
+                        throw new Error(`HTTP ${res.status}`);
+                    }
+
+                    let json;
+                    try {
+                        json = JSON.parse(rawText);
+                    } catch {
+                        addErrorLog({ method: "GET", url: reqUrl, status: res.status, message: "JSON parse xatosi", responseBody: rawText });
+                        throw new Error("JSON parse xatosi");
+                    }
+
+                    // Turli response formatlarini qo'llab-quvvatlash
+                    let results = null;
+                    if (Array.isArray(json)) {
+                        results = json;                          // [ {...}, ... ]
+                    } else if (Array.isArray(json?.results)) {
+                        results = json.results;                  // { results: [...] }
+                    } else if (Array.isArray(json?.data?.results)) {
+                        results = json.data.results;             // { data: { results: [...] } }
+                    } else if (Array.isArray(json?.data)) {
+                        results = json.data;                     // { data: [...] }
+                    }
+
+                    if (results !== null) {
+                        state.allCategories = results;
+                        setStatus(`${results.length} ta kategoriya yuklandi`);
+                        console.log("[fetchCategories] yuklandi:", results.length, "ta");
+                    } else {
+                        // Kutilmagan format — log ga yozamiz
+                        addErrorLog({
+                            method: "GET", url: reqUrl, status: res.status,
+                            message: "Noma'lum response format — kategoriyalar topilmadi",
+                            responseBody: rawText.slice(0, 500),
+                        });
+                        setStatus("Response formati noto'g'ri — error log ga qarang");
+                        console.warn("[fetchCategories] noma'lum format:", json);
+                    }
+                } catch (e) {
+                    setStatus("Kategoriyalarni yuklab bo'lmadi: " + e.message);
+                    showToast("API xato: " + e.message, "error");
+                    console.error("[fetchCategories] xato:", e);
+                    if (!e.message.startsWith("HTTP ")) {
+                        addErrorLog({ method: "GET", url: reqUrl, status: 0, message: e.message });
+                    }
+                }
+            }
+
+            categoryTypeSelect.addEventListener("change", () => {
+                clearParent();
+                fetchCategories();
+            });
+
+            let parentDebounce;
+            parentSearchInput.addEventListener("input", () => {
+                clearTimeout(parentDebounce);
+                parentDebounce = setTimeout(
+                    () => renderParentDropdown(parentSearchInput.value.trim()),
+                    200,
+                );
+            });
+            parentSearchInput.addEventListener("focus", () =>
+                renderParentDropdown(parentSearchInput.value.trim()),
+            );
+
+            document.addEventListener("click", (e) => {
+                if (!e.target.closest("#parentSearchView"))
+                    parentDropdown.classList.remove("open");
+                if (!e.target.closest("#childSearchView"))
+                    childDropdown.classList.remove("open");
+            });
+
+            function renderParentDropdown(query) {
+                const filtered = query
+                    ? state.allCategories.filter((c) =>
+                          c.name.toLowerCase().includes(query.toLowerCase()),
+                      )
+                    : state.allCategories.slice(0, 30);
+                parentDropdown.innerHTML = "";
+                if (!filtered.length) {
+                    parentDropdown.innerHTML = `<div class="autocomplete-item"><span class="autocomplete-item-name" style="color:var(--text-muted)">Topilmadi</span></div>`;
+                    parentDropdown.classList.add("open");
+                    return;
+                }
+                filtered.forEach((cat) => {
+                    const item = document.createElement("div");
+                    item.className = "autocomplete-item";
+                    const hasChildren = cat.children && cat.children.length > 0;
+                    item.innerHTML = `
+      <span class="autocomplete-item-icon">${hasChildren ? "📁" : "📄"}</span>
+      <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
+      <span class="autocomplete-item-type">${cat.category_type}${hasChildren ? ` · ${cat.children.length} child` : ""}</span>
+    `;
+                    item.addEventListener("click", () => selectParent(cat));
+                    parentDropdown.appendChild(item);
+                });
+                parentDropdown.classList.add("open");
+            }
+
+            function highlight(text, query) {
+                if (!query) return text;
+                const idx = text.toLowerCase().indexOf(query.toLowerCase());
+                if (idx === -1) return text;
+                return (
+                    text.slice(0, idx) +
+                    `<strong style="color:var(--accent)">${text.slice(idx, idx + query.length)}</strong>` +
+                    text.slice(idx + query.length)
+                );
+            }
+
+            const parentSelectedImg      = document.getElementById("parentSelectedImg");
+            const parentSelectedFallback = document.getElementById("parentSelectedFallback");
+            const childSelectedImg       = document.getElementById("childSelectedImg");
+            const childSelectedFallback  = document.getElementById("childSelectedFallback");
+
+            function setCatThumb(imgEl, fallbackEl, url) {
+                imgEl.classList.remove("loaded");
+                if (url) {
+                    imgEl.onload  = () => imgEl.classList.add("loaded");
+                    imgEl.onerror = () => imgEl.classList.remove("loaded");
+                    imgEl.src = url;
+                } else {
+                    imgEl.src = "";
+                }
+            }
+
+            function selectParent(cat) {
+                state.parentSelected = cat;
+                state.childSelected = null;
+                parentSelectedName.textContent = cat.name;
+                parentSelectedMeta.textContent = `ID: ${cat.id} · ${cat.category_type} · Level ${cat.level}`;
+                setCatThumb(parentSelectedImg, parentSelectedFallback, cat.image || "");
+                parentSelectedView.classList.remove("hidden");
+                parentSearchView.classList.add("hidden");
+                parentDropdown.classList.remove("open");
+                const hasChildren = cat.children && cat.children.length > 0;
+                if (hasChildren) {
+                    childSection.classList.remove("hidden");
+                    childSearchInput.value = "";
+                    childSelectedView.classList.add("hidden");
+                    childSearchView.classList.remove("hidden");
+                    renderChildDropdown("");
+                } else {
+                    childSection.classList.add("hidden");
+                }
+                updateBreadcrumb();
+                checkSubmit();
+            }
+
+            clearParentBtn.addEventListener("click", clearParent);
+            function clearParent() {
+                state.parentSelected = null;
+                state.childSelected = null;
+                parentSelectedView.classList.add("hidden");
+                parentSearchView.classList.remove("hidden");
+                parentSearchInput.value = "";
+                childSection.classList.add("hidden");
+                updateBreadcrumb();
+                checkSubmit();
+            }
+
+            let childDebounce;
+            childSearchInput.addEventListener("input", () => {
+                clearTimeout(childDebounce);
+                childDebounce = setTimeout(
+                    () => renderChildDropdown(childSearchInput.value.trim()),
+                    200,
+                );
+            });
+            childSearchInput.addEventListener("focus", () =>
+                renderChildDropdown(childSearchInput.value.trim()),
+            );
+
+            function renderChildDropdown(query) {
+                if (!state.parentSelected) return;
+                const children = state.parentSelected.children || [];
+                const filtered = query
+                    ? children.filter((c) =>
+                          c.name.toLowerCase().includes(query.toLowerCase()),
+                      )
+                    : children;
+                childDropdown.innerHTML = "";
+                if (!filtered.length) {
+                    childDropdown.innerHTML = `<div class="autocomplete-item"><span class="autocomplete-item-name" style="color:var(--text-muted)">Topilmadi</span></div>`;
+                    childDropdown.classList.add("open");
+                    return;
+                }
+                filtered.forEach((cat) => {
+                    const item = document.createElement("div");
+                    item.className = "autocomplete-item";
+                    item.innerHTML = `
+      <span class="autocomplete-item-icon">📂</span>
+      <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
+      <span class="autocomplete-item-type">ID: ${cat.id} · Level ${cat.level}</span>
+    `;
+                    item.addEventListener("click", () => selectChild(cat));
+                    childDropdown.appendChild(item);
+                });
+                childDropdown.classList.add("open");
+            }
+
+            function selectChild(cat) {
+                state.childSelected = cat;
+                childSelectedName.textContent = cat.name;
+                childSelectedMeta.textContent = `ID: ${cat.id} · Level ${cat.level}`;
+                setCatThumb(childSelectedImg, childSelectedFallback, cat.image || "");
+                childSelectedView.classList.remove("hidden");
+                childSearchView.classList.add("hidden");
+                childDropdown.classList.remove("open");
+                updateBreadcrumb();
+                checkSubmit();
+            }
+
+            clearChildBtn.addEventListener("click", () => {
+                state.childSelected = null;
+                childSelectedView.classList.add("hidden");
+                childSearchView.classList.remove("hidden");
+                childSearchInput.value = "";
+                updateBreadcrumb();
+                checkSubmit();
+            });
+
+            function updateBreadcrumb() {
+                if (!state.parentSelected) {
+                    breadcrumb.classList.add("hidden");
+                    return;
+                }
+                breadcrumb.classList.remove("hidden");
+                bcParent.textContent = state.parentSelected.name;
+                if (state.childSelected) {
+                    bcSep.style.display = "";
+                    bcChild.textContent = state.childSelected.name;
+                } else {
+                    bcSep.style.display = "none";
+                    bcChild.textContent = "";
+                }
+            }
+
+            window.onmessage = async (event) => {
+                const msg = event.data.pluginMessage;
+                if (!msg) return;
+
+                if (msg.type === "selection") {
+                    if (!msg.data) {
+                        state.selectedNode = null;
+                        state.imageBytes = null;
+                        state.imageDataUrl = null;
+                        previewCard.className = "preview-card no-selection";
+                        previewImgBox.innerHTML = "🖼️";
+                        previewName.textContent =
+                            msg.error || "Hech narsa tanlanmagan";
+                        previewMeta.textContent =
+                            "Figmada frame yoki component tanlang";
+                        previewBadge.textContent = "—";
+                        previewBadge.className = "preview-badge empty";
+                        checkSubmit();
+                        return;
+                    }
+                    state.selectedNode = msg.data;
+                    previewCard.className = "preview-card";
+                    previewImgBox.innerHTML = "⏳";
+                    previewName.textContent = msg.data.name;
+                    previewMeta.textContent = `${msg.data.type} · Eksport kutilmoqda...`;
+                    previewBadge.textContent = "Yuklanmoqda";
+                    previewBadge.className = "preview-badge";
+                    parent.postMessage(
+                        { pluginMessage: { type: "export-image" } },
+                        "*",
+                    );
+                }
+
+                if (msg.type === "export-result") {
+                    const bytes = new Uint8Array(msg.bytes);
+                    const blob = new Blob([bytes], { type: "image/png" });
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        state.imageDataUrl = e.target.result;
+                        previewImgBox.innerHTML = `<img src="${e.target.result}" alt="preview" />`;
+                    };
+                    reader.readAsDataURL(blob);
+                    state.imageBytes = bytes;
+                    previewCard.className = "preview-card has-image";
+                    previewName.textContent = msg.name;
+                    previewMeta.textContent = `PNG · ${(bytes.length / 1024).toFixed(1)} KB`;
+                    previewBadge.textContent = "Tayyor ✓";
+                    previewBadge.className = "preview-badge ready";
+                    checkSubmit();
+                }
+
+                if (msg.type === "export-error") {
+                    previewMeta.textContent = msg.error;
+                    previewBadge.textContent = "Xato";
+                    previewBadge.className = "preview-badge";
+                    showToast(msg.error, "error");
+                }
+            };
+
+            function checkSubmit() {
+                const targetCat = state.childSelected || state.parentSelected;
+                submitBtn.disabled = !(
+                    state.token &&
+                    state.imageBytes &&
+                    targetCat &&
+                    !state.loading
+                );
+            }
+
+            submitBtn.addEventListener("click", handleSubmit);
+
+            async function handleSubmit() {
+                const targetCat = state.childSelected || state.parentSelected;
+                if (!targetCat || !state.imageBytes || !state.token) return;
+
+                state.loading = true;
+                submitBtn.disabled = true;
+                submitIcon.textContent = "⏳";
+                submitText.textContent = "Yuklanmoqda...";
+                progressWrap.classList.add("show");
+                setProgress(20);
+
+                try {
+                    const blob = new Blob([state.imageBytes], {
+                        type: "image/png",
+                    });
+                    const filename =
+                        (state.selectedNode?.name || "image").replace(
+                            /[^a-zA-Z0-9-_]/g,
+                            "_",
+                        ) + ".png";
+                    const formData = new FormData();
+                    formData.append("image", blob, filename);
+
+                    setProgress(50);
+                    const patchUrl = `${BASE_URL}/api/v1/category/${targetCat.id}/`;
+                    setStatus(`PATCH /api/v1/category/${targetCat.id}/`);
+
+                    const res = await fetch(patchUrl, {
+                        method: "PATCH",
+                        headers: { Authorization: state.token },
+                        body: formData,
+                    });
+
+                    setProgress(90);
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        addErrorLog({ method: "PATCH", url: patchUrl, status: res.status, message: `"${targetCat.name}" yangilanmadi`, responseBody: errText });
+                        throw new Error(
+                            `HTTP ${res.status}: ${errText.slice(0, 120)}`,
+                        );
+                    }
+
+                    await res.json();
+                    setProgress(100);
+                    showToast(
+                        `✅ "${targetCat.name}" muvaffaqiyatli yangilandi!`,
+                        "success",
+                    );
+                    setStatus("Muvaffaqiyatli yuborildi ✓");
+                    submitIcon.textContent = "✅";
+                    submitText.textContent = "Yuborildi!";
+                    parent.postMessage(
+                        {
+                            pluginMessage: {
+                                type: "notify",
+                                message: `"${targetCat.name}" yangilandi ✓`,
+                            },
+                        },
+                        "*",
+                    );
+
+                    setTimeout(() => {
+                        submitIcon.textContent = "⬆️";
+                        submitText.textContent = "Yuborish";
+                        setProgress(0);
+                        setTimeout(
+                            () => progressWrap.classList.remove("show"),
+                            400,
+                        );
+                    }, 2000);
+                } catch (e) {
+                    setProgress(0);
+                    showToast("Xato: " + e.message, "error");
+                    setStatus("Xato yuz berdi");
+                    submitIcon.textContent = "❌";
+                    submitText.textContent = "Qayta urinish";
+                    if (!e.message.startsWith("HTTP ")) {
+                        addErrorLog({ method: "PATCH", url: `${BASE_URL}/api/v1/category/${(state.childSelected || state.parentSelected)?.id}/`, status: 0, message: e.message });
+                    }
+                    parent.postMessage(
+                        {
+                            pluginMessage: {
+                                type: "notify",
+                                message: "Xato: " + e.message,
+                                error: true,
+                            },
+                        },
+                        "*",
+                    );
+                } finally {
+                    state.loading = false;
+                    checkSubmit();
+                }
+            }
+
+            function setProgress(val) {
+                progressBar.style.width = val + "%";
+            }
+            function setStatus(msg) {
+                statusText.textContent = msg;
+            }
+
+            let toastTimer;
+            function showToast(msg, type = "info") {
+                toast.textContent = msg;
+                toast.className = `toast ${type} show`;
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(
+                    () => toast.classList.remove("show"),
+                    3500,
+                );
+            }
+
+            // ── Error Log ──────────────────────────────────────────
+            const errorLogHeader  = document.getElementById("errorLogHeader");
+            const errorLogBody    = document.getElementById("errorLogBody");
+            const errorLogToggle  = document.getElementById("errorLogToggle");
+            const errorLogCount   = document.getElementById("errorLogCount");
+            const errorLogEmpty   = document.getElementById("errorLogEmpty");
+            const errorLogActions = document.getElementById("errorLogActions");
+            const errorLogClearBtn= document.getElementById("errorLogClearBtn");
+            let errorLogs = [];
+
+            errorLogHeader.addEventListener("click", () => {
+                const isOpen = errorLogBody.classList.toggle("open");
+                errorLogToggle.classList.toggle("open", isOpen);
+            });
+
+            errorLogClearBtn.addEventListener("click", () => {
+                errorLogs = [];
+                renderErrorLog();
+            });
+
+            function addErrorLog({ method = "GET", url = "", status = 0, message = "", responseBody = "" }) {
+                const now = new Date();
+                const time = now.toTimeString().slice(0, 8);
+                errorLogs.unshift({ time, method, url, status, message, responseBody });
+                if (errorLogs.length > 50) errorLogs.pop();
+                renderErrorLog();
+                // Avtomatik ochish
+                if (!errorLogBody.classList.contains("open")) {
+                    errorLogBody.classList.add("open");
+                    errorLogToggle.classList.add("open");
+                }
+            }
+
+            function renderErrorLog() {
+                const count = errorLogs.length;
+                errorLogCount.textContent = count;
+                errorLogCount.className = "error-log-count" + (count === 0 ? " zero" : "");
+
+                // Avvalgi itemlarni tozalash (empty va actions dan tashqari)
+                const items = errorLogBody.querySelectorAll(".error-log-item");
+                items.forEach(el => el.remove());
+
+                if (count === 0) {
+                    errorLogEmpty.classList.remove("hidden");
+                    errorLogActions.classList.add("hidden");
+                    return;
+                }
+                errorLogEmpty.classList.add("hidden");
+                errorLogActions.classList.remove("hidden");
+
+                errorLogs.forEach((log) => {
+                    const statusClass = log.status === 0 ? "s0"
+                        : log.status >= 500 ? "s5xx"
+                        : "s4xx";
+                    const statusLabel = log.status === 0 ? "NET ERR" : `HTTP ${log.status}`;
+
+                    const item = document.createElement("div");
+                    item.className = "error-log-item";
+                    item.innerHTML = `
+                        <div class="error-log-item-header">
+                            <span class="error-log-time">${log.time}</span>
+                            <span class="error-log-status ${statusClass}">${statusLabel}</span>
+                            <span style="font-size:10px;color:var(--text-muted);font-weight:600">${log.method}</span>
+                        </div>
+                        <div class="error-log-url">${log.url}</div>
+                        ${log.message ? `<div class="error-log-msg">${escapeHtml(log.message)}</div>` : ""}
+                        ${log.responseBody ? `<div class="error-log-body-text">${escapeHtml(log.responseBody)}</div>` : ""}
+                    `;
+                    errorLogActions.before(item);
+                });
+            }
+
+            function escapeHtml(str) {
+                return String(str)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;");
+            }
+        </script>
+    </body>
+</html>
