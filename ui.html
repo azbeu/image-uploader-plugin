@@ -1248,6 +1248,10 @@
                     submitIcon.textContent = "✅";
                     submitText.textContent = "Yuborildi!";
                     parent.postMessage(
+                        { pluginMessage: { type: "rename-node", categoryId: targetCat.id } },
+                        "*",
+                    );
+                    parent.postMessage(
                         {
                             pluginMessage: {
                                 type: "notify",

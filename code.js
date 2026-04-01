@@ -65,6 +65,25 @@ figma.ui.onmessage = async (msg) => {
     }
   }
 
+  if (msg.type === "rename-node") {
+    const selection = figma.currentPage.selection;
+    if (selection.length === 1) {
+      const node = selection[0];
+      const current = node.name;
+      const id = String(msg.categoryId);
+
+      // Format: "1, 2 ) Layer name"
+      const match = current.match(/^([\d,\s]+)\)\s*(.+)$/);
+      if (match) {
+        const ids = match[1].trim();
+        const originalName = match[2].trim();
+        node.name = `${ids}, ${id} ) ${originalName}`;
+      } else {
+        node.name = `${id} ) ${current}`;
+      }
+    }
+  }
+
   if (msg.type === "close") figma.closePlugin();
 
   if (msg.type === "notify") {
