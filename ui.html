@@ -721,52 +721,10 @@
             </div>
         </div>
 
-        <div class="section hidden" id="childSection">
-            <div class="label">
-                <span class="dot"></span>Ichki Kategoriya (Child)
-            </div>
-            <div id="childSelectedView" class="hidden">
-                <div class="autocomplete-selected">
-                    <div class="selected-info">
-                        <div class="cat-thumb-wrap">
-                            <img class="cat-thumb" id="childSelectedImg" src="" alt="" />
-                            <span class="cat-thumb-fallback" id="childSelectedFallback">📂</span>
-                        </div>
-                        <div>
-                            <div
-                                class="selected-name"
-                                id="childSelectedName"
-                            ></div>
-                            <div
-                                class="selected-meta"
-                                id="childSelectedMeta"
-                            ></div>
-                        </div>
-                    </div>
-                    <button class="clear-btn" id="clearChildBtn">✕</button>
-                </div>
-            </div>
-            <div id="childSearchView">
-                <div class="autocomplete-wrap">
-                    <input
-                        class="input"
-                        id="childSearchInput"
-                        placeholder="Child kategoriya qidiring..."
-                        autocomplete="off"
-                    />
-                    <div class="autocomplete-list" id="childDropdown"></div>
-                </div>
-            </div>
-        </div>
+        <!-- Dinamik sub-level kategoriyalar shu yerga qo'shiladi -->
+        <div id="subLevels"></div>
 
-        <div class="breadcrumb hidden" id="breadcrumb">
-            <span>📍</span>
-            <span class="breadcrumb-item" id="bcParent"></span>
-            <span class="breadcrumb-sep" id="bcSep" style="display: none"
-                >›</span
-            >
-            <span class="breadcrumb-item" id="bcChild"></span>
-        </div>
+        <div class="breadcrumb hidden" id="breadcrumb"></div>
 
         <hr class="divider" />
 
@@ -807,8 +765,7 @@
                 imageBytes: null,
                 imageDataUrl: null,
                 allCategories: [],
-                parentSelected: null,
-                childSelected: null,
+                selectedPath: [],   // [parentCat, childCat, grandchildCat, ...]
                 loading: false,
             };
 
@@ -818,36 +775,16 @@
             const previewName = document.getElementById("previewName");
             const previewMeta = document.getElementById("previewMeta");
             const previewBadge = document.getElementById("previewBadge");
-            const categoryTypeSelect =
-                document.getElementById("categoryTypeSelect");
-            const parentSearchInput =
-                document.getElementById("parentSearchInput");
-            const parentDropdown = document.getElementById("parentDropdown");
-            const parentSelectedView =
-                document.getElementById("parentSelectedView");
-            const parentSelectedName =
-                document.getElementById("parentSelectedName");
-            const parentSelectedMeta =
-                document.getElementById("parentSelectedMeta");
-            const parentSearchView =
-                document.getElementById("parentSearchView");
-            const clearParentBtn = document.getElementById("clearParentBtn");
-            const childSection = document.getElementById("childSection");
-            const childSearchInput =
-                document.getElementById("childSearchInput");
-            const childDropdown = document.getElementById("childDropdown");
-            const childSelectedView =
-                document.getElementById("childSelectedView");
-            const childSelectedName =
-                document.getElementById("childSelectedName");
-            const childSelectedMeta =
-                document.getElementById("childSelectedMeta");
-            const childSearchView = document.getElementById("childSearchView");
-            const clearChildBtn = document.getElementById("clearChildBtn");
-            const breadcrumb = document.getElementById("breadcrumb");
-            const bcParent = document.getElementById("bcParent");
-            const bcChild = document.getElementById("bcChild");
-            const bcSep = document.getElementById("bcSep");
+            const categoryTypeSelect = document.getElementById("categoryTypeSelect");
+            const parentSearchInput  = document.getElementById("parentSearchInput");
+            const parentDropdown     = document.getElementById("parentDropdown");
+            const parentSelectedView = document.getElementById("parentSelectedView");
+            const parentSelectedName = document.getElementById("parentSelectedName");
+            const parentSelectedMeta = document.getElementById("parentSelectedMeta");
+            const parentSearchView   = document.getElementById("parentSearchView");
+            const clearParentBtn     = document.getElementById("clearParentBtn");
+            const subLevels          = document.getElementById("subLevels");
+            const breadcrumb         = document.getElementById("breadcrumb");
             const submitBtn = document.getElementById("submitBtn");
             const submitText = document.getElementById("submitText");
             const submitIcon = document.getElementById("submitIcon");
@@ -957,36 +894,12 @@
             document.addEventListener("click", (e) => {
                 if (!e.target.closest("#parentSearchView"))
                     parentDropdown.classList.remove("open");
-                if (!e.target.closest("#childSearchView"))
-                    childDropdown.classList.remove("open");
-            });
-
-            function renderParentDropdown(query) {
-                const filtered = query
-                    ? state.allCategories.filter((c) =>
-                          c.name.toLowerCase().includes(query.toLowerCase()),
-                      )
-                    : state.allCategories.slice(0, 30);
-                parentDropdown.innerHTML = "";
-                if (!filtered.length) {
-                    parentDropdown.innerHTML = `<div class="autocomplete-item"><span class="autocomplete-item-name" style="color:var(--text-muted)">Topilmadi</span></div>`;
-                    parentDropdown.classList.add("open");
-                    return;
-                }
-                filtered.forEach((cat) => {
-                    const item = document.createElement("div");
-                    item.className = "autocomplete-item";
-                    const hasChildren = cat.children && cat.children.length > 0;
-                    item.innerHTML = `
-      <span class="autocomplete-item-icon">${hasChildren ? "📁" : "📄"}</span>
-      <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
-      <span class="autocomplete-item-type">${cat.category_type}${hasChildren ? ` · ${cat.children.length} child` : ""}</span>
-    `;
-                    item.addEventListener("click", () => selectParent(cat));
-                    parentDropdown.appendChild(item);
+                // Sub-level dropdownlarni yopish
+                document.querySelectorAll(".sub-dropdown").forEach(dd => {
+                    if (!e.target.closest(`.sub-search-view[data-depth="${dd.dataset.depth}"]`))
+                        dd.classList.remove("open");
                 });
-                parentDropdown.classList.add("open");
-            }
+            });
 
             function highlight(text, query) {
                 if (!query) return text;
@@ -1001,10 +914,8 @@
 
             const parentSelectedImg      = document.getElementById("parentSelectedImg");
             const parentSelectedFallback = document.getElementById("parentSelectedFallback");
-            const childSelectedImg       = document.getElementById("childSelectedImg");
-            const childSelectedFallback  = document.getElementById("childSelectedFallback");
 
-            function setCatThumb(imgEl, fallbackEl, url) {
+            function setCatThumb(imgEl, url) {
                 imgEl.classList.remove("loaded");
                 if (url) {
                     imgEl.onload  = () => imgEl.classList.add("loaded");
@@ -1015,116 +926,186 @@
                 }
             }
 
+            function renderParentDropdown(query) {
+                const filtered = query
+                    ? state.allCategories.filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+                    : state.allCategories.slice(0, 30);
+                parentDropdown.innerHTML = "";
+                if (!filtered.length) {
+                    parentDropdown.innerHTML = `<div class="autocomplete-item"><span class="autocomplete-item-name" style="color:var(--text-muted)">Topilmadi</span></div>`;
+                    parentDropdown.classList.add("open");
+                    return;
+                }
+                filtered.forEach(cat => {
+                    const item = document.createElement("div");
+                    item.className = "autocomplete-item";
+                    const hasChildren = cat.children && cat.children.length > 0;
+                    item.innerHTML = `
+                        <span class="autocomplete-item-icon">${hasChildren ? "📁" : "📄"}</span>
+                        <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
+                        <span class="autocomplete-item-type">${cat.category_type}${hasChildren ? ` · ${cat.children.length} child` : ""}</span>
+                    `;
+                    item.addEventListener("click", () => selectParent(cat));
+                    parentDropdown.appendChild(item);
+                });
+                parentDropdown.classList.add("open");
+            }
+
             function selectParent(cat) {
-                state.parentSelected = cat;
-                state.childSelected = null;
+                state.selectedPath = [cat];
                 parentSelectedName.textContent = cat.name;
                 parentSelectedMeta.textContent = `ID: ${cat.id} · ${cat.category_type} · Level ${cat.level}`;
-                setCatThumb(parentSelectedImg, parentSelectedFallback, cat.image || "");
+                setCatThumb(parentSelectedImg, cat.image || "");
                 parentSelectedView.classList.remove("hidden");
                 parentSearchView.classList.add("hidden");
                 parentDropdown.classList.remove("open");
-                const hasChildren = cat.children && cat.children.length > 0;
-                if (hasChildren) {
-                    childSection.classList.remove("hidden");
-                    childSearchInput.value = "";
-                    childSelectedView.classList.add("hidden");
-                    childSearchView.classList.remove("hidden");
-                    renderChildDropdown("");
-                } else {
-                    childSection.classList.add("hidden");
+                subLevels.innerHTML = "";
+                if (cat.children && cat.children.length > 0) {
+                    renderSubLevel(cat.children, 1);
                 }
                 updateBreadcrumb();
                 checkSubmit();
             }
 
-            clearParentBtn.addEventListener("click", clearParent);
-            function clearParent() {
-                state.parentSelected = null;
-                state.childSelected = null;
+            clearParentBtn.addEventListener("click", () => {
+                state.selectedPath = [];
                 parentSelectedView.classList.add("hidden");
                 parentSearchView.classList.remove("hidden");
                 parentSearchInput.value = "";
-                childSection.classList.add("hidden");
+                subLevels.innerHTML = "";
                 updateBreadcrumb();
                 checkSubmit();
-            }
-
-            let childDebounce;
-            childSearchInput.addEventListener("input", () => {
-                clearTimeout(childDebounce);
-                childDebounce = setTimeout(
-                    () => renderChildDropdown(childSearchInput.value.trim()),
-                    200,
-                );
             });
-            childSearchInput.addEventListener("focus", () =>
-                renderChildDropdown(childSearchInput.value.trim()),
-            );
 
-            function renderChildDropdown(query) {
-                if (!state.parentSelected) return;
-                const children = state.parentSelected.children || [];
-                const filtered = query
-                    ? children.filter((c) =>
-                          c.name.toLowerCase().includes(query.toLowerCase()),
-                      )
-                    : children;
-                childDropdown.innerHTML = "";
-                if (!filtered.length) {
-                    childDropdown.innerHTML = `<div class="autocomplete-item"><span class="autocomplete-item-name" style="color:var(--text-muted)">Topilmadi</span></div>`;
-                    childDropdown.classList.add("open");
-                    return;
-                }
-                filtered.forEach((cat) => {
-                    const item = document.createElement("div");
-                    item.className = "autocomplete-item";
-                    item.innerHTML = `
-      <span class="autocomplete-item-icon">📂</span>
-      <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
-      <span class="autocomplete-item-type">ID: ${cat.id} · Level ${cat.level}</span>
-    `;
-                    item.addEventListener("click", () => selectChild(cat));
-                    childDropdown.appendChild(item);
+            // Berilgan depth dan chuqurroq barcha level larni o'chirish
+            function clearSubLevelsFrom(depth) {
+                Array.from(subLevels.children).forEach(el => {
+                    if (parseInt(el.dataset.depth) >= depth) el.remove();
                 });
-                childDropdown.classList.add("open");
             }
 
-            function selectChild(cat) {
-                state.childSelected = cat;
-                childSelectedName.textContent = cat.name;
-                childSelectedMeta.textContent = `ID: ${cat.id} · Level ${cat.level}`;
-                setCatThumb(childSelectedImg, childSelectedFallback, cat.image || "");
-                childSelectedView.classList.remove("hidden");
-                childSearchView.classList.add("hidden");
-                childDropdown.classList.remove("open");
-                updateBreadcrumb();
-                checkSubmit();
-            }
+            // Recursive sub-level render
+            function renderSubLevel(children, depth) {
+                clearSubLevelsFrom(depth);
 
-            clearChildBtn.addEventListener("click", () => {
-                state.childSelected = null;
-                childSelectedView.classList.add("hidden");
-                childSearchView.classList.remove("hidden");
-                childSearchInput.value = "";
-                updateBreadcrumb();
-                checkSubmit();
-            });
+                const section = document.createElement("div");
+                section.className = "section";
+                section.dataset.depth = depth;
+
+                section.innerHTML = `
+                    <div class="label"><span class="dot"></span>Ichki Kategoriya</div>
+                    <div class="sub-selected-view hidden" data-depth="${depth}">
+                        <div class="autocomplete-selected">
+                            <div class="selected-info">
+                                <div class="cat-thumb-wrap">
+                                    <img class="cat-thumb sub-thumb" data-depth="${depth}" src="" alt="" />
+                                    <span class="cat-thumb-fallback">📂</span>
+                                </div>
+                                <div>
+                                    <div class="selected-name sub-selected-name" data-depth="${depth}"></div>
+                                    <div class="selected-meta sub-selected-meta" data-depth="${depth}"></div>
+                                </div>
+                            </div>
+                            <button class="clear-btn sub-clear-btn" data-depth="${depth}">✕</button>
+                        </div>
+                    </div>
+                    <div class="sub-search-view" data-depth="${depth}">
+                        <div class="autocomplete-wrap">
+                            <input class="input sub-search-input" data-depth="${depth}" placeholder="Qidiring..." autocomplete="off" />
+                            <div class="autocomplete-list sub-dropdown" data-depth="${depth}"></div>
+                        </div>
+                    </div>
+                `;
+
+                subLevels.appendChild(section);
+
+                const searchInput = section.querySelector(".sub-search-input");
+                const dropdown    = section.querySelector(".sub-dropdown");
+
+                function renderDropdown(query) {
+                    const filtered = query
+                        ? children.filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+                        : children;
+                    dropdown.innerHTML = "";
+                    if (!filtered.length) {
+                        dropdown.innerHTML = `<div class="autocomplete-item"><span class="autocomplete-item-name" style="color:var(--text-muted)">Topilmadi</span></div>`;
+                        dropdown.classList.add("open");
+                        return;
+                    }
+                    filtered.forEach(cat => {
+                        const item = document.createElement("div");
+                        item.className = "autocomplete-item";
+                        const hasChildren = cat.children && cat.children.length > 0;
+                        item.innerHTML = `
+                            <span class="autocomplete-item-icon">${hasChildren ? "📁" : "📄"}</span>
+                            <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
+                            <span class="autocomplete-item-type">ID: ${cat.id}${hasChildren ? ` · ${cat.children.length} child` : ""}</span>
+                        `;
+                        item.addEventListener("click", () => {
+                            // Path ni yangilash
+                            state.selectedPath = [...state.selectedPath.slice(0, depth), cat];
+
+                            // UI yangilash
+                            const thumbEl = section.querySelector(".sub-thumb");
+                            setCatThumb(thumbEl, cat.image || "");
+                            section.querySelector(`.sub-selected-name`).textContent = cat.name;
+                            section.querySelector(`.sub-selected-meta`).textContent = `ID: ${cat.id} · Level ${cat.level}`;
+                            section.querySelector(".sub-selected-view").classList.remove("hidden");
+                            section.querySelector(".sub-search-view").classList.add("hidden");
+                            dropdown.classList.remove("open");
+
+                            // Chuqurroq levellarni o'chirib, kerak bo'lsa yangi level qo'shish
+                            clearSubLevelsFrom(depth + 1);
+                            if (cat.children && cat.children.length > 0) {
+                                renderSubLevel(cat.children, depth + 1);
+                            }
+                            updateBreadcrumb();
+                            checkSubmit();
+                        });
+                        dropdown.appendChild(item);
+                    });
+                    dropdown.classList.add("open");
+                }
+
+                let debounce;
+                searchInput.addEventListener("input", () => {
+                    clearTimeout(debounce);
+                    debounce = setTimeout(() => renderDropdown(searchInput.value.trim()), 200);
+                });
+                searchInput.addEventListener("focus", () => renderDropdown(searchInput.value.trim()));
+
+                // Clear tugmasi
+                section.querySelector(".sub-clear-btn").addEventListener("click", () => {
+                    state.selectedPath = state.selectedPath.slice(0, depth);
+                    clearSubLevelsFrom(depth + 1);
+                    section.querySelector(".sub-selected-view").classList.add("hidden");
+                    section.querySelector(".sub-search-view").classList.remove("hidden");
+                    searchInput.value = "";
+                    renderDropdown("");
+                    updateBreadcrumb();
+                    checkSubmit();
+                });
+            }
 
             function updateBreadcrumb() {
-                if (!state.parentSelected) {
+                if (state.selectedPath.length === 0) {
                     breadcrumb.classList.add("hidden");
                     return;
                 }
                 breadcrumb.classList.remove("hidden");
-                bcParent.textContent = state.parentSelected.name;
-                if (state.childSelected) {
-                    bcSep.style.display = "";
-                    bcChild.textContent = state.childSelected.name;
-                } else {
-                    bcSep.style.display = "none";
-                    bcChild.textContent = "";
-                }
+                breadcrumb.innerHTML = "<span>📍</span> ";
+                state.selectedPath.forEach((cat, i) => {
+                    if (i > 0) {
+                        const sep = document.createElement("span");
+                        sep.className = "breadcrumb-sep";
+                        sep.textContent = "›";
+                        breadcrumb.appendChild(sep);
+                    }
+                    const item = document.createElement("span");
+                    item.className = "breadcrumb-item";
+                    item.textContent = cat.name;
+                    breadcrumb.appendChild(item);
+                });
             }
 
             window.onmessage = async (event) => {
@@ -1187,7 +1168,7 @@
             };
 
             function checkSubmit() {
-                const targetCat = state.childSelected || state.parentSelected;
+                const targetCat = state.selectedPath[state.selectedPath.length - 1];
                 submitBtn.disabled = !(
                     state.token &&
                     state.imageBytes &&
@@ -1199,7 +1180,7 @@
             submitBtn.addEventListener("click", handleSubmit);
 
             async function handleSubmit() {
-                const targetCat = state.childSelected || state.parentSelected;
+                const targetCat = state.selectedPath[state.selectedPath.length - 1];
                 if (!targetCat || !state.imageBytes || !state.token) return;
 
                 state.loading = true;
