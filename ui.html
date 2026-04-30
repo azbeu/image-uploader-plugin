@@ -691,8 +691,17 @@
                 <div class="autocomplete-selected">
                     <div class="selected-info">
                         <div class="cat-thumb-wrap">
-                            <img class="cat-thumb" id="parentSelectedImg" src="" alt="" />
-                            <span class="cat-thumb-fallback" id="parentSelectedFallback">📁</span>
+                            <img
+                                class="cat-thumb"
+                                id="parentSelectedImg"
+                                src=""
+                                alt=""
+                            />
+                            <span
+                                class="cat-thumb-fallback"
+                                id="parentSelectedFallback"
+                                >📁</span
+                            >
                         </div>
                         <div>
                             <div
@@ -742,14 +751,20 @@
             <div class="error-log-header" id="errorLogHeader">
                 <div class="error-log-title">
                     <span>🐛</span> Error Log
-                    <span class="error-log-count zero" id="errorLogCount">0</span>
+                    <span class="error-log-count zero" id="errorLogCount"
+                        >0</span
+                    >
                 </div>
                 <span class="error-log-toggle" id="errorLogToggle">▼</span>
             </div>
             <div class="error-log-body" id="errorLogBody">
-                <div class="error-log-empty" id="errorLogEmpty">Hozircha xatolik yo'q</div>
+                <div class="error-log-empty" id="errorLogEmpty">
+                    Hozircha xatolik yo'q
+                </div>
                 <div class="error-log-actions hidden" id="errorLogActions">
-                    <button class="error-log-clear-btn" id="errorLogClearBtn">🗑 Tozalash</button>
+                    <button class="error-log-clear-btn" id="errorLogClearBtn">
+                        🗑 Tozalash
+                    </button>
                 </div>
             </div>
         </div>
@@ -757,7 +772,7 @@
         <div class="toast" id="toast"></div>
 
         <script>
-            const BASE_URL = "https://uzxarid.felixits.uz";
+            const BASE_URL = "https://api.uzxarid.uz";
 
             let state = {
                 token: "",
@@ -765,7 +780,7 @@
                 imageBytes: null,
                 imageDataUrl: null,
                 allCategories: [],
-                selectedPath: [],   // [parentCat, childCat, grandchildCat, ...]
+                selectedPath: [], // [parentCat, childCat, grandchildCat, ...]
                 loading: false,
             };
 
@@ -775,16 +790,22 @@
             const previewName = document.getElementById("previewName");
             const previewMeta = document.getElementById("previewMeta");
             const previewBadge = document.getElementById("previewBadge");
-            const categoryTypeSelect = document.getElementById("categoryTypeSelect");
-            const parentSearchInput  = document.getElementById("parentSearchInput");
-            const parentDropdown     = document.getElementById("parentDropdown");
-            const parentSelectedView = document.getElementById("parentSelectedView");
-            const parentSelectedName = document.getElementById("parentSelectedName");
-            const parentSelectedMeta = document.getElementById("parentSelectedMeta");
-            const parentSearchView   = document.getElementById("parentSearchView");
-            const clearParentBtn     = document.getElementById("clearParentBtn");
-            const subLevels          = document.getElementById("subLevels");
-            const breadcrumb         = document.getElementById("breadcrumb");
+            const categoryTypeSelect =
+                document.getElementById("categoryTypeSelect");
+            const parentSearchInput =
+                document.getElementById("parentSearchInput");
+            const parentDropdown = document.getElementById("parentDropdown");
+            const parentSelectedView =
+                document.getElementById("parentSelectedView");
+            const parentSelectedName =
+                document.getElementById("parentSelectedName");
+            const parentSelectedMeta =
+                document.getElementById("parentSelectedMeta");
+            const parentSearchView =
+                document.getElementById("parentSearchView");
+            const clearParentBtn = document.getElementById("clearParentBtn");
+            const subLevels = document.getElementById("subLevels");
+            const breadcrumb = document.getElementById("breadcrumb");
             const submitBtn = document.getElementById("submitBtn");
             const submitText = document.getElementById("submitText");
             const submitIcon = document.getElementById("submitIcon");
@@ -823,10 +844,21 @@
                     });
 
                     const rawText = await res.text();
-                    console.log("[fetchCategories] status:", res.status, "body:", rawText.slice(0, 300));
+                    console.log(
+                        "[fetchCategories] status:",
+                        res.status,
+                        "body:",
+                        rawText.slice(0, 300),
+                    );
 
                     if (!res.ok) {
-                        addErrorLog({ method: "GET", url: reqUrl, status: res.status, message: `Kategoriyalar yuklanmadi`, responseBody: rawText });
+                        addErrorLog({
+                            method: "GET",
+                            url: reqUrl,
+                            status: res.status,
+                            message: `Kategoriyalar yuklanmadi`,
+                            responseBody: rawText,
+                        });
                         throw new Error(`HTTP ${res.status}`);
                     }
 
@@ -834,42 +866,65 @@
                     try {
                         json = JSON.parse(rawText);
                     } catch {
-                        addErrorLog({ method: "GET", url: reqUrl, status: res.status, message: "JSON parse xatosi", responseBody: rawText });
+                        addErrorLog({
+                            method: "GET",
+                            url: reqUrl,
+                            status: res.status,
+                            message: "JSON parse xatosi",
+                            responseBody: rawText,
+                        });
                         throw new Error("JSON parse xatosi");
                     }
 
                     // Turli response formatlarini qo'llab-quvvatlash
                     let results = null;
                     if (Array.isArray(json)) {
-                        results = json;                          // [ {...}, ... ]
+                        results = json; // [ {...}, ... ]
                     } else if (Array.isArray(json?.results)) {
-                        results = json.results;                  // { results: [...] }
+                        results = json.results; // { results: [...] }
                     } else if (Array.isArray(json?.data?.results)) {
-                        results = json.data.results;             // { data: { results: [...] } }
+                        results = json.data.results; // { data: { results: [...] } }
                     } else if (Array.isArray(json?.data)) {
-                        results = json.data;                     // { data: [...] }
+                        results = json.data; // { data: [...] }
                     }
 
                     if (results !== null) {
                         state.allCategories = results;
                         setStatus(`${results.length} ta kategoriya yuklandi`);
-                        console.log("[fetchCategories] yuklandi:", results.length, "ta");
+                        console.log(
+                            "[fetchCategories] yuklandi:",
+                            results.length,
+                            "ta",
+                        );
                     } else {
                         // Kutilmagan format — log ga yozamiz
                         addErrorLog({
-                            method: "GET", url: reqUrl, status: res.status,
-                            message: "Noma'lum response format — kategoriyalar topilmadi",
+                            method: "GET",
+                            url: reqUrl,
+                            status: res.status,
+                            message:
+                                "Noma'lum response format — kategoriyalar topilmadi",
                             responseBody: rawText.slice(0, 500),
                         });
-                        setStatus("Response formati noto'g'ri — error log ga qarang");
-                        console.warn("[fetchCategories] noma'lum format:", json);
+                        setStatus(
+                            "Response formati noto'g'ri — error log ga qarang",
+                        );
+                        console.warn(
+                            "[fetchCategories] noma'lum format:",
+                            json,
+                        );
                     }
                 } catch (e) {
                     setStatus("Kategoriyalarni yuklab bo'lmadi: " + e.message);
                     showToast("API xato: " + e.message, "error");
                     console.error("[fetchCategories] xato:", e);
                     if (!e.message.startsWith("HTTP ")) {
-                        addErrorLog({ method: "GET", url: reqUrl, status: 0, message: e.message });
+                        addErrorLog({
+                            method: "GET",
+                            url: reqUrl,
+                            status: 0,
+                            message: e.message,
+                        });
                     }
                 }
             }
@@ -895,8 +950,12 @@
                 if (!e.target.closest("#parentSearchView"))
                     parentDropdown.classList.remove("open");
                 // Sub-level dropdownlarni yopish
-                document.querySelectorAll(".sub-dropdown").forEach(dd => {
-                    if (!e.target.closest(`.sub-search-view[data-depth="${dd.dataset.depth}"]`))
+                document.querySelectorAll(".sub-dropdown").forEach((dd) => {
+                    if (
+                        !e.target.closest(
+                            `.sub-search-view[data-depth="${dd.dataset.depth}"]`,
+                        )
+                    )
                         dd.classList.remove("open");
                 });
             });
@@ -912,10 +971,21 @@
                 );
             }
 
-            const parentSelectedImg      = document.getElementById("parentSelectedImg");
-            const parentSelectedFallback = document.getElementById("parentSelectedFallback");
+            const parentSelectedImg =
+                document.getElementById("parentSelectedImg");
+            const parentSelectedFallback = document.getElementById(
+                "parentSelectedFallback",
+            );
 
-            function setCatThumb(imgEl, url) {
+            // image object yoki string dan URL olish
+            function getImageUrl(image) {
+                if (!image) return "";
+                if (typeof image === "string") return image;
+                return image.medium || image.small || image.large || image.original || "";
+            }
+
+            function setCatThumb(imgEl, image) {
+                const url = getImageUrl(image);
                 imgEl.classList.remove("loaded");
                 if (url) {
                     imgEl.onload  = () => imgEl.classList.add("loaded");
@@ -926,9 +996,25 @@
                 }
             }
 
+            // Kategoriya children larini API dan lazy load qilish
+            async function fetchCategoryChildren(catId) {
+                const url = `${BASE_URL}/api/v1/category/${catId}/`;
+                console.log("[fetchChildren] GET", url);
+                const res = await fetch(url, { headers: { "Accept-Language": "uz" } });
+                const text = await res.text();
+                if (!res.ok) {
+                    addErrorLog({ method: "GET", url, status: res.status, message: "Children yuklanmadi", responseBody: text });
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                const json = JSON.parse(text);
+                return json?.data?.children || [];
+            }
+
             function renderParentDropdown(query) {
                 const filtered = query
-                    ? state.allCategories.filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+                    ? state.allCategories.filter((c) =>
+                          c.name.toLowerCase().includes(query.toLowerCase()),
+                      )
                     : state.allCategories.slice(0, 30);
                 parentDropdown.innerHTML = "";
                 if (!filtered.length) {
@@ -936,14 +1022,14 @@
                     parentDropdown.classList.add("open");
                     return;
                 }
-                filtered.forEach(cat => {
+                filtered.forEach((cat) => {
                     const item = document.createElement("div");
                     item.className = "autocomplete-item";
-                    const hasChildren = cat.children && cat.children.length > 0;
+                    const hasChildren = cat.has_children || (cat.children && cat.children.length > 0);
                     item.innerHTML = `
                         <span class="autocomplete-item-icon">${hasChildren ? "📁" : "📄"}</span>
                         <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
-                        <span class="autocomplete-item-type">${cat.category_type}${hasChildren ? ` · ${cat.children.length} child` : ""}</span>
+                        <span class="autocomplete-item-type">${cat.category_type}${hasChildren ? " · children bor" : ""}</span>
                     `;
                     item.addEventListener("click", () => selectParent(cat));
                     parentDropdown.appendChild(item);
@@ -951,20 +1037,31 @@
                 parentDropdown.classList.add("open");
             }
 
-            function selectParent(cat) {
+            async function selectParent(cat) {
                 state.selectedPath = [cat];
                 parentSelectedName.textContent = cat.name;
                 parentSelectedMeta.textContent = `ID: ${cat.id} · ${cat.category_type} · Level ${cat.level}`;
-                setCatThumb(parentSelectedImg, cat.image || "");
+                setCatThumb(parentSelectedImg, cat.image);
                 parentSelectedView.classList.remove("hidden");
                 parentSearchView.classList.add("hidden");
                 parentDropdown.classList.remove("open");
                 subLevels.innerHTML = "";
-                if (cat.children && cat.children.length > 0) {
-                    renderSubLevel(cat.children, 1);
-                }
                 updateBreadcrumb();
                 checkSubmit();
+
+                const hasChildren = cat.has_children || (cat.children && cat.children.length > 0);
+                if (hasChildren) {
+                    try {
+                        setStatus("Ichki kategoriyalar yuklanmoqda...");
+                        const children = cat.children?.length ? cat.children : await fetchCategoryChildren(cat.id);
+                        cat.children = children; // cache
+                        if (children.length > 0) renderSubLevel(children, 1);
+                        setStatus(`${children.length} ta ichki kategoriya yuklandi`);
+                    } catch (e) {
+                        showToast("Ichki kategoriyalar yuklanmadi: " + e.message, "error");
+                        setStatus("Ichki kategoriyalar yuklanmadi");
+                    }
+                }
             }
 
             clearParentBtn.addEventListener("click", () => {
@@ -979,7 +1076,7 @@
 
             // Berilgan depth dan chuqurroq barcha level larni o'chirish
             function clearSubLevelsFrom(depth) {
-                Array.from(subLevels.children).forEach(el => {
+                Array.from(subLevels.children).forEach((el) => {
                     if (parseInt(el.dataset.depth) >= depth) el.remove();
                 });
             }
@@ -1020,11 +1117,15 @@
                 subLevels.appendChild(section);
 
                 const searchInput = section.querySelector(".sub-search-input");
-                const dropdown    = section.querySelector(".sub-dropdown");
+                const dropdown = section.querySelector(".sub-dropdown");
 
                 function renderDropdown(query) {
                     const filtered = query
-                        ? children.filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+                        ? children.filter((c) =>
+                              c.name
+                                  .toLowerCase()
+                                  .includes(query.toLowerCase()),
+                          )
                         : children;
                     dropdown.innerHTML = "";
                     if (!filtered.length) {
@@ -1032,35 +1133,42 @@
                         dropdown.classList.add("open");
                         return;
                     }
-                    filtered.forEach(cat => {
+                    filtered.forEach((cat) => {
                         const item = document.createElement("div");
                         item.className = "autocomplete-item";
-                        const hasChildren = cat.children && cat.children.length > 0;
+                        const hasChildren = cat.has_children || (cat.children && cat.children.length > 0);
                         item.innerHTML = `
                             <span class="autocomplete-item-icon">${hasChildren ? "📁" : "📄"}</span>
                             <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
-                            <span class="autocomplete-item-type">ID: ${cat.id}${hasChildren ? ` · ${cat.children.length} child` : ""}</span>
+                            <span class="autocomplete-item-type">ID: ${cat.id}${hasChildren ? " · children bor" : ""}</span>
                         `;
-                        item.addEventListener("click", () => {
-                            // Path ni yangilash
+                        item.addEventListener("click", async () => {
                             state.selectedPath = [...state.selectedPath.slice(0, depth), cat];
 
-                            // UI yangilash
                             const thumbEl = section.querySelector(".sub-thumb");
-                            setCatThumb(thumbEl, cat.image || "");
-                            section.querySelector(`.sub-selected-name`).textContent = cat.name;
-                            section.querySelector(`.sub-selected-meta`).textContent = `ID: ${cat.id} · Level ${cat.level}`;
+                            setCatThumb(thumbEl, cat.image);
+                            section.querySelector(".sub-selected-name").textContent = cat.name;
+                            section.querySelector(".sub-selected-meta").textContent = `ID: ${cat.id} · Level ${cat.level}`;
                             section.querySelector(".sub-selected-view").classList.remove("hidden");
                             section.querySelector(".sub-search-view").classList.add("hidden");
                             dropdown.classList.remove("open");
 
-                            // Chuqurroq levellarni o'chirib, kerak bo'lsa yangi level qo'shish
                             clearSubLevelsFrom(depth + 1);
-                            if (cat.children && cat.children.length > 0) {
-                                renderSubLevel(cat.children, depth + 1);
-                            }
                             updateBreadcrumb();
                             checkSubmit();
+
+                            if (hasChildren) {
+                                try {
+                                    setStatus("Ichki kategoriyalar yuklanmoqda...");
+                                    const fetched = cat.children?.length ? cat.children : await fetchCategoryChildren(cat.id);
+                                    cat.children = fetched;
+                                    if (fetched.length > 0) renderSubLevel(fetched, depth + 1);
+                                    setStatus(`${fetched.length} ta ichki kategoriya yuklandi`);
+                                } catch (e) {
+                                    showToast("Ichki kategoriyalar yuklanmadi: " + e.message, "error");
+                                    setStatus("Ichki kategoriyalar yuklanmadi");
+                                }
+                            }
                         });
                         dropdown.appendChild(item);
                     });
@@ -1070,21 +1178,32 @@
                 let debounce;
                 searchInput.addEventListener("input", () => {
                     clearTimeout(debounce);
-                    debounce = setTimeout(() => renderDropdown(searchInput.value.trim()), 200);
+                    debounce = setTimeout(
+                        () => renderDropdown(searchInput.value.trim()),
+                        200,
+                    );
                 });
-                searchInput.addEventListener("focus", () => renderDropdown(searchInput.value.trim()));
+                searchInput.addEventListener("focus", () =>
+                    renderDropdown(searchInput.value.trim()),
+                );
 
                 // Clear tugmasi
-                section.querySelector(".sub-clear-btn").addEventListener("click", () => {
-                    state.selectedPath = state.selectedPath.slice(0, depth);
-                    clearSubLevelsFrom(depth + 1);
-                    section.querySelector(".sub-selected-view").classList.add("hidden");
-                    section.querySelector(".sub-search-view").classList.remove("hidden");
-                    searchInput.value = "";
-                    renderDropdown("");
-                    updateBreadcrumb();
-                    checkSubmit();
-                });
+                section
+                    .querySelector(".sub-clear-btn")
+                    .addEventListener("click", () => {
+                        state.selectedPath = state.selectedPath.slice(0, depth);
+                        clearSubLevelsFrom(depth + 1);
+                        section
+                            .querySelector(".sub-selected-view")
+                            .classList.add("hidden");
+                        section
+                            .querySelector(".sub-search-view")
+                            .classList.remove("hidden");
+                        searchInput.value = "";
+                        renderDropdown("");
+                        updateBreadcrumb();
+                        checkSubmit();
+                    });
             }
 
             function updateBreadcrumb() {
@@ -1168,7 +1287,8 @@
             };
 
             function checkSubmit() {
-                const targetCat = state.selectedPath[state.selectedPath.length - 1];
+                const targetCat =
+                    state.selectedPath[state.selectedPath.length - 1];
                 submitBtn.disabled = !(
                     state.token &&
                     state.imageBytes &&
@@ -1180,7 +1300,8 @@
             submitBtn.addEventListener("click", handleSubmit);
 
             async function handleSubmit() {
-                const targetCat = state.selectedPath[state.selectedPath.length - 1];
+                const targetCat =
+                    state.selectedPath[state.selectedPath.length - 1];
                 if (!targetCat || !state.imageBytes || !state.token) return;
 
                 state.loading = true;
@@ -1208,14 +1329,23 @@
 
                     const res = await fetch(patchUrl, {
                         method: "PATCH",
-                        headers: { Authorization: state.token, "Accept-Language": "uz" },
+                        headers: {
+                            Authorization: state.token,
+                            "Accept-Language": "uz",
+                        },
                         body: formData,
                     });
 
                     setProgress(90);
                     if (!res.ok) {
                         const errText = await res.text();
-                        addErrorLog({ method: "PATCH", url: patchUrl, status: res.status, message: `"${targetCat.name}" yangilanmadi`, responseBody: errText });
+                        addErrorLog({
+                            method: "PATCH",
+                            url: patchUrl,
+                            status: res.status,
+                            message: `"${targetCat.name}" yangilanmadi`,
+                            responseBody: errText,
+                        });
                         throw new Error(
                             `HTTP ${res.status}: ${errText.slice(0, 120)}`,
                         );
@@ -1231,7 +1361,12 @@
                     submitIcon.textContent = "✅";
                     submitText.textContent = "Yuborildi!";
                     parent.postMessage(
-                        { pluginMessage: { type: "rename-node", categoryId: targetCat.id } },
+                        {
+                            pluginMessage: {
+                                type: "rename-node",
+                                categoryId: targetCat.id,
+                            },
+                        },
                         "*",
                     );
                     parent.postMessage(
@@ -1260,7 +1395,12 @@
                     submitIcon.textContent = "❌";
                     submitText.textContent = "Qayta urinish";
                     if (!e.message.startsWith("HTTP ")) {
-                        addErrorLog({ method: "PATCH", url: `${BASE_URL}/api/v1/category/${(state.childSelected || state.parentSelected)?.id}/`, status: 0, message: e.message });
+                        addErrorLog({
+                            method: "PATCH",
+                            url: `${BASE_URL}/api/v1|v2/category/${targetCat.id}/`,
+                            status: 0,
+                            message: e.message,
+                        });
                     }
                     parent.postMessage(
                         {
@@ -1297,13 +1437,14 @@
             }
 
             // ── Error Log ──────────────────────────────────────────
-            const errorLogHeader  = document.getElementById("errorLogHeader");
-            const errorLogBody    = document.getElementById("errorLogBody");
-            const errorLogToggle  = document.getElementById("errorLogToggle");
-            const errorLogCount   = document.getElementById("errorLogCount");
-            const errorLogEmpty   = document.getElementById("errorLogEmpty");
+            const errorLogHeader = document.getElementById("errorLogHeader");
+            const errorLogBody = document.getElementById("errorLogBody");
+            const errorLogToggle = document.getElementById("errorLogToggle");
+            const errorLogCount = document.getElementById("errorLogCount");
+            const errorLogEmpty = document.getElementById("errorLogEmpty");
             const errorLogActions = document.getElementById("errorLogActions");
-            const errorLogClearBtn= document.getElementById("errorLogClearBtn");
+            const errorLogClearBtn =
+                document.getElementById("errorLogClearBtn");
             let errorLogs = [];
 
             errorLogHeader.addEventListener("click", () => {
@@ -1316,10 +1457,23 @@
                 renderErrorLog();
             });
 
-            function addErrorLog({ method = "GET", url = "", status = 0, message = "", responseBody = "" }) {
+            function addErrorLog({
+                method = "GET",
+                url = "",
+                status = 0,
+                message = "",
+                responseBody = "",
+            }) {
                 const now = new Date();
                 const time = now.toTimeString().slice(0, 8);
-                errorLogs.unshift({ time, method, url, status, message, responseBody });
+                errorLogs.unshift({
+                    time,
+                    method,
+                    url,
+                    status,
+                    message,
+                    responseBody,
+                });
                 if (errorLogs.length > 50) errorLogs.pop();
                 renderErrorLog();
                 // Avtomatik ochish
@@ -1332,11 +1486,12 @@
             function renderErrorLog() {
                 const count = errorLogs.length;
                 errorLogCount.textContent = count;
-                errorLogCount.className = "error-log-count" + (count === 0 ? " zero" : "");
+                errorLogCount.className =
+                    "error-log-count" + (count === 0 ? " zero" : "");
 
                 // Avvalgi itemlarni tozalash (empty va actions dan tashqari)
                 const items = errorLogBody.querySelectorAll(".error-log-item");
-                items.forEach(el => el.remove());
+                items.forEach((el) => el.remove());
 
                 if (count === 0) {
                     errorLogEmpty.classList.remove("hidden");
@@ -1347,10 +1502,14 @@
                 errorLogActions.classList.remove("hidden");
 
                 errorLogs.forEach((log) => {
-                    const statusClass = log.status === 0 ? "s0"
-                        : log.status >= 500 ? "s5xx"
-                        : "s4xx";
-                    const statusLabel = log.status === 0 ? "NET ERR" : `HTTP ${log.status}`;
+                    const statusClass =
+                        log.status === 0
+                            ? "s0"
+                            : log.status >= 500
+                              ? "s5xx"
+                              : "s4xx";
+                    const statusLabel =
+                        log.status === 0 ? "NET ERR" : `HTTP ${log.status}`;
 
                     const item = document.createElement("div");
                     item.className = "error-log-item";
