@@ -677,11 +677,11 @@
         <div class="section">
             <div class="label"><span class="dot"></span>Kategoriya Turi</div>
             <select class="input" id="categoryTypeSelect">
-                <option value="">Barchasi</option>
                 <option value="Product">Product</option>
                 <option value="Service">Service</option>
                 <option value="Auto">Auto</option>
                 <option value="Home">Home</option>
+                <option value="Equipment">Equipment</option>
             </select>
         </div>
 
@@ -832,8 +832,10 @@
 
             async function fetchCategories() {
                 const type = categoryTypeSelect.value;
-                const params = new URLSearchParams({ page_size: 200 });
-                if (type) params.set("category_type", type);
+                const params = new URLSearchParams({
+                    category_type: type,
+                    page_size: 999,
+                });
                 const reqUrl = `${BASE_URL}/api/v1/category/?${params}`;
                 try {
                     setStatus("Kategoriyalar yuklanmoqda...");
@@ -891,11 +893,11 @@
                     if (results !== null) {
                         state.allCategories = results;
                         setStatus(`${results.length} ta kategoriya yuklandi`);
-                        console.log(
-                            "[fetchCategories] yuklandi:",
-                            results.length,
-                            "ta",
-                        );
+                        console.log("[fetchCategories] yuklandi:", results.length, "ta");
+                        // Parent search ko'rinib tursa — dropdownni yangilash
+                        if (!parentSearchView.classList.contains("hidden")) {
+                            renderParentDropdown(parentSearchInput.value.trim());
+                        }
                     } else {
                         // Kutilmagan format — log ga yozamiz
                         addErrorLog({
@@ -981,14 +983,20 @@
             function getImageUrl(image) {
                 if (!image) return "";
                 if (typeof image === "string") return image;
-                return image.medium || image.small || image.large || image.original || "";
+                return (
+                    image.medium ||
+                    image.small ||
+                    image.large ||
+                    image.original ||
+                    ""
+                );
             }
 
             function setCatThumb(imgEl, image) {
                 const url = getImageUrl(image);
                 imgEl.classList.remove("loaded");
                 if (url) {
-                    imgEl.onload  = () => imgEl.classList.add("loaded");
+                    imgEl.onload = () => imgEl.classList.add("loaded");
                     imgEl.onerror = () => imgEl.classList.remove("loaded");
                     imgEl.src = url;
                 } else {
@@ -998,16 +1006,24 @@
 
             // Kategoriya children larini API dan lazy load qilish
             async function fetchCategoryChildren(catId) {
-                const url = `${BASE_URL}/api/v1/category/${catId}/`;
+                const url = `${BASE_URL}/api/v1/category/?parent=${catId}&page_size=999`;
                 console.log("[fetchChildren] GET", url);
-                const res = await fetch(url, { headers: { "Accept-Language": "uz" } });
+                const res = await fetch(url, {
+                    headers: { "Accept-Language": "uz" },
+                });
                 const text = await res.text();
                 if (!res.ok) {
-                    addErrorLog({ method: "GET", url, status: res.status, message: "Children yuklanmadi", responseBody: text });
+                    addErrorLog({
+                        method: "GET",
+                        url,
+                        status: res.status,
+                        message: "Children yuklanmadi",
+                        responseBody: text,
+                    });
                     throw new Error(`HTTP ${res.status}`);
                 }
                 const json = JSON.parse(text);
-                return json?.data?.children || [];
+                return json?.data?.results || [];
             }
 
             function renderParentDropdown(query) {
@@ -1025,7 +1041,9 @@
                 filtered.forEach((cat) => {
                     const item = document.createElement("div");
                     item.className = "autocomplete-item";
-                    const hasChildren = cat.has_children || (cat.children && cat.children.length > 0);
+                    const hasChildren =
+                        cat.has_children ||
+                        (cat.children && cat.children.length > 0);
                     item.innerHTML = `
                         <span class="autocomplete-item-icon">${hasChildren ? "📁" : "📄"}</span>
                         <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
@@ -1049,22 +1067,31 @@
                 updateBreadcrumb();
                 checkSubmit();
 
-                const hasChildren = cat.has_children || (cat.children && cat.children.length > 0);
+                const hasChildren =
+                    cat.has_children ||
+                    (cat.children && cat.children.length > 0);
                 if (hasChildren) {
                     try {
                         setStatus("Ichki kategoriyalar yuklanmoqda...");
-                        const children = cat.children?.length ? cat.children : await fetchCategoryChildren(cat.id);
+                        const children = cat.children?.length
+                            ? cat.children
+                            : await fetchCategoryChildren(cat.id);
                         cat.children = children; // cache
                         if (children.length > 0) renderSubLevel(children, 1);
-                        setStatus(`${children.length} ta ichki kategoriya yuklandi`);
+                        setStatus(
+                            `${children.length} ta ichki kategoriya yuklandi`,
+                        );
                     } catch (e) {
-                        showToast("Ichki kategoriyalar yuklanmadi: " + e.message, "error");
+                        showToast(
+                            "Ichki kategoriyalar yuklanmadi: " + e.message,
+                            "error",
+                        );
                         setStatus("Ichki kategoriyalar yuklanmadi");
                     }
                 }
             }
 
-            clearParentBtn.addEventListener("click", () => {
+            function clearParent() {
                 state.selectedPath = [];
                 parentSelectedView.classList.add("hidden");
                 parentSearchView.classList.remove("hidden");
@@ -1072,7 +1099,9 @@
                 subLevels.innerHTML = "";
                 updateBreadcrumb();
                 checkSubmit();
-            });
+            }
+
+            clearParentBtn.addEventListener("click", clearParent);
 
             // Berilgan depth dan chuqurroq barcha level larni o'chirish
             function clearSubLevelsFrom(depth) {
@@ -1136,21 +1165,35 @@
                     filtered.forEach((cat) => {
                         const item = document.createElement("div");
                         item.className = "autocomplete-item";
-                        const hasChildren = cat.has_children || (cat.children && cat.children.length > 0);
+                        const hasChildren =
+                            cat.has_children ||
+                            (cat.children && cat.children.length > 0);
                         item.innerHTML = `
                             <span class="autocomplete-item-icon">${hasChildren ? "📁" : "📄"}</span>
                             <span class="autocomplete-item-name">${highlight(cat.name, query)}</span>
                             <span class="autocomplete-item-type">ID: ${cat.id}${hasChildren ? " · children bor" : ""}</span>
                         `;
                         item.addEventListener("click", async () => {
-                            state.selectedPath = [...state.selectedPath.slice(0, depth), cat];
+                            state.selectedPath = [
+                                ...state.selectedPath.slice(0, depth),
+                                cat,
+                            ];
 
                             const thumbEl = section.querySelector(".sub-thumb");
                             setCatThumb(thumbEl, cat.image);
-                            section.querySelector(".sub-selected-name").textContent = cat.name;
-                            section.querySelector(".sub-selected-meta").textContent = `ID: ${cat.id} · Level ${cat.level}`;
-                            section.querySelector(".sub-selected-view").classList.remove("hidden");
-                            section.querySelector(".sub-search-view").classList.add("hidden");
+                            section.querySelector(
+                                ".sub-selected-name",
+                            ).textContent = cat.name;
+                            section.querySelector(
+                                ".sub-selected-meta",
+                            ).textContent =
+                                `ID: ${cat.id} · Level ${cat.level}`;
+                            section
+                                .querySelector(".sub-selected-view")
+                                .classList.remove("hidden");
+                            section
+                                .querySelector(".sub-search-view")
+                                .classList.add("hidden");
                             dropdown.classList.remove("open");
 
                             clearSubLevelsFrom(depth + 1);
@@ -1159,13 +1202,24 @@
 
                             if (hasChildren) {
                                 try {
-                                    setStatus("Ichki kategoriyalar yuklanmoqda...");
-                                    const fetched = cat.children?.length ? cat.children : await fetchCategoryChildren(cat.id);
+                                    setStatus(
+                                        "Ichki kategoriyalar yuklanmoqda...",
+                                    );
+                                    const fetched = cat.children?.length
+                                        ? cat.children
+                                        : await fetchCategoryChildren(cat.id);
                                     cat.children = fetched;
-                                    if (fetched.length > 0) renderSubLevel(fetched, depth + 1);
-                                    setStatus(`${fetched.length} ta ichki kategoriya yuklandi`);
+                                    if (fetched.length > 0)
+                                        renderSubLevel(fetched, depth + 1);
+                                    setStatus(
+                                        `${fetched.length} ta ichki kategoriya yuklandi`,
+                                    );
                                 } catch (e) {
-                                    showToast("Ichki kategoriyalar yuklanmadi: " + e.message, "error");
+                                    showToast(
+                                        "Ichki kategoriyalar yuklanmadi: " +
+                                            e.message,
+                                        "error",
+                                    );
                                     setStatus("Ichki kategoriyalar yuklanmadi");
                                 }
                             }
